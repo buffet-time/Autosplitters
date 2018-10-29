@@ -19,16 +19,8 @@ state("HotlineGL")
 
 startup
 {
-	settings.Add("Grade screen");
-	settings.SetToolTip("Grade screen", "Split when the grade appears at the end of a level");
-	settings.Add("Showdown");
-	settings.SetToolTip("Showdown", "Split when throwing the paper");
-	settings.Add("Trauma");
-	settings.SetToolTip("Trauma", "Split when exiting the hospital");
-	settings.Add("Prank call");
-	settings.SetToolTip("Prank call", "Split when getting on the bike");
-	settings.Add("Resolution");
-	settings.SetToolTip("Resolution", "Split when getting on the bike");
+	settings.Add("o", false, "Only End split");
+	settings.SetToolTip("o", "Remove all splits except the final one - Resolution");
 }
 
 start
@@ -39,8 +31,8 @@ start
 
 split
 {
-	return ((settings["Trauma"] && current.room == current.trauma && old.player_x >= -32 && current.player_x < -32) || // trauma
-		(settings["Showdown"] && current.room == current.showdown && old.showdown_paper == 0 && current.showdown_paper == 1) || // showdown
-		(((settings["Prank call"] && current.room == current.prankcall) || (settings["Resolution"] && current.room == current.resolution)) && old.bike_climb <= 0.30 && current.bike_climb > 0.30) ||
-		(settings["Grade screen"] && old.grade == 0 && current.grade == 1));
+	return ((!settings["o"] && current.room == current.trauma && old.player_x >= -32 && current.player_x < -32) || // trauma
+		(!settings["o"] && current.room == current.showdown && old.showdown_paper == 0 && current.showdown_paper == 1) || // showdown
+		(((!settings["o"] && current.room == current.prankcall) || (current.room == current.resolution)) && old.bike_climb <= 0.30 && current.bike_climb > 0.30) ||
+		(!settings["o"] && old.grade == 0 && current.grade == 1));
 }
