@@ -1,4 +1,4 @@
-state("iji", "1.7") {}
+state("iji") {}
 
 startup
 {
@@ -16,7 +16,7 @@ startup
 init
 {
 	vars.globalsPtr = new MemoryWatcher<int>(new DeepPointer("iji.exe", 0x189720, 4));
-	vars.enemyPtr = new MemoryWatcher<int>(new DeepPointer("iji.exe", 0x71C78, 0xA5C, 0x480, 0x10C, 4));
+	vars.torPtr = new MemoryWatcher<int>(new DeepPointer("iji.exe", 0x1AF2F4, 0x80, 0x390, 0, 0x10C, 4));
 	vars.watchers = new MemoryWatcherList();
 	vars.fightingTor = false;
 	vars.initialized = false;
@@ -31,13 +31,11 @@ init
 		vars.broken = true;
 	});
 	vars.broken = false;
-
-	if (modules.First().ModuleMemorySize == 2445312) version = "1.7";
 }
 
 update
 {
-	if (version != "1.7" || vars.broken) return false;
+	if (vars.broken) return false;
 
 	bool globalsUpdated = vars.globalsPtr.Update(game);
 	if (globalsUpdated || !vars.initialized) {
@@ -85,19 +83,36 @@ update
 			}
 			if (remaining > 0) { vars.error("Sector Info memory locations."); return false; }
 
+			MemoryWatcher<double> sectorWatcher    = new MemoryWatcher<double>(sector)    { Name = "Sector"     };
+			MemoryWatcher<double> levelTimeWatcher = new MemoryWatcher<double>(levelTime) { Name = "Level Time" };
+			MemoryWatcher<double> totalTimeWatcher = new MemoryWatcher<double>(totalTime) { Name = "Total Time" };
+			MemoryWatcher<double> iosa2Watcher     = new MemoryWatcher<double>(iosa2)     { Name = "Iosa 2"     };
+
+			if (vars.watchers.Count > 0) {
+				sectorWatcher.Old = vars.watchers["Sector"].Old;
+				sectorWatcher.Current = vars.watchers["Sector"].Current;
+				levelTimeWatcher.Old = vars.watchers["Level Time"].Old;
+				levelTimeWatcher.Current = vars.watchers["Level Time"].Current;
+				totalTimeWatcher.Old = vars.watchers["Total Time"].Old;
+				totalTimeWatcher.Current = vars.watchers["Total Time"].Current;
+				iosa2Watcher.Old = vars.watchers["Iosa 2"].Old;
+				iosa2Watcher.Current = vars.watchers["Iosa 2"].Current;
+			}
+
 			vars.watchers.Clear();
-			vars.watchers.Add(new MemoryWatcher<double>(sector)    { Name = "Sector"     });
-			vars.watchers.Add(new MemoryWatcher<double>(levelTime) { Name = "Level Time" });
-			vars.watchers.Add(new MemoryWatcher<double>(totalTime) { Name = "Total Time" });
-			vars.watchers.Add(new MemoryWatcher<double>(iosa2)     { Name = "Iosa 2"     });
+			vars.watchers.Add(sectorWatcher);
+			vars.watchers.Add(levelTimeWatcher);
+			vars.watchers.Add(totalTimeWatcher);
+			vars.watchers.Add(iosa2Watcher);
 		}
 		vars.watchers.UpdateAll(game);
 
 		if (vars.watchers["Sector"].Current == 15) {
-			if (vars.enemyPtr.Update(game)) {
+			//print("Checking tor");
+			if (vars.torPtr.Update(game)) {
 				int remaining = 2;
 				bool tor = false;
-				IntPtr currentHp = IntPtr.Zero, ptr = new IntPtr(vars.enemyPtr.Current);
+				IntPtr currentHp = IntPtr.Zero, ptr = new IntPtr(vars.torPtr.Current);
 				while (true) {
 					int key = memory.ReadValue<int>(ptr);
 					if (key < 100000 || key > 105000) break;
@@ -141,7 +156,7 @@ split
 		double oldSector = vars.watchers["Sector"].Old, currentSector = vars.watchers["Sector"].Current;
 		if (oldSector != currentSector) return (
 			// standard progression
-			(oldSector + 1 == currentSector) ||
+			(oldSector + 1 == currentSector && currentSector != 1) ||
 			// sector 9 to sector X
 			(oldSector == 9 && currentSector == 0) ||
 
@@ -175,5 +190,7 @@ isLoading
 
 gameTime
 {
-	return TimeSpan.FromSeconds(vars.watchers["Level Time"].Current + vars.watchers["Total Time"].Current);
+	if (vars.inGame.Current == 1)
+		return TimeSpan.FromSeconds(vars.watchers["Level Time"].Current + vars.watchers["Total Time"].Current);
+	else return TimeSpan.FromSeconds(0);
 }
