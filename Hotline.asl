@@ -28,13 +28,13 @@ init
 startup
 {
 	settings.Add("e", true,  "End split");
-	settings.SetToolTip("e", "Resolution");
+	settings.SetToolTip("e", "Splits on completion of Resolution");
 	settings.Add("1", true,  "Every Chapter");
-	settings.SetToolTip("1", "Splits on grade screen, trauma room exit, showdown and prank call");
+	settings.SetToolTip("1", "Splits after each level (except Resolution)");
 	settings.Add("2", false, "Every Part (All Levels)");
 	settings.SetToolTip("2", "Splits on \"Part X\" screens (except after tutorial)");
 	settings.Add("3", false, "Every Part (Any%)");
-	settings.SetToolTip("3", "Splits after Decadence, Neighbors, Deadline and Showdown");
+	settings.SetToolTip("3", "Splits after completion of Decadence, Neighbors, Deadline, and Showdown");
 }
 
 update
